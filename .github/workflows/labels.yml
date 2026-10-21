@@ -14,15 +14,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      repository-projects: write
       issues: write
       pull-requests: write
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup labels
+      - name: Run Label Setup
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          chmod +x .github/setup_labels.sh
-          ./.github/setup_labels.sh
+        run: bash .github/setup_labels.sh

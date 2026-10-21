@@ -3,23 +3,23 @@
 
 set -e
 
-labels=(
-  "status: pending|fbca04|Review items pending action"
-  "status: in-progress|1d76db|Review items currently being addressed"
-  "status: resolved|0e8a16|Review items successfully resolved"
-  "status: closed|6c757d|Review items closed or out of scope"
-)
-
-for label_info in "${labels[@]}"; do
-  IFS="|" read -r name color desc <<< "$label_info"
+create_label() {
+  name="$1"
+  color="$2"
+  description="$3"
 
   if gh label list --search "$name" 2>/dev/null | grep -q "$name"; then
     echo "Updating label: $name"
-    gh label edit "$name" --color "$color" --description "$desc"
+    gh label edit "$name" --color "$color" --description "$description"
   else
     echo "Creating label: $name"
-    gh label create "$name" --color "$color" --description "$desc"
+    gh label create "$name" --color "$color" --description "$description"
   fi
-done
+}
+
+create_label "status: pending" "e99695" "Awaiting initial review"
+create_label "status: in-progress" "fef2c0" "Addressing review comments"
+create_label "status: resolved" "c2e0c6" "All comments addressed"
+create_label "status: closed" "d4d7d6" "Review concluded"
 
 echo "PR status labels created/updated successfully!"
