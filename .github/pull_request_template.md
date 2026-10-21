@@ -18,6 +18,8 @@
 
 ---
 
-## Verification Plan
-- [ ] Unit tests executed and passed successfully
-- [ ] Manual verification completed
+### **Verification Plan**
+- [ ] **Device Testing:** Tested on (Low-end/API 28, High-end/API 34).
+- [ ] **UI/UX:** Matches design system; handles Light/Dark mode and Dynamic Color.
+- [ ] **Performance:** No observable dropped frames; checked memory footprint.
+- [ ] **Automated Tests:** Unit tests pass; UI/Integration tests updated if necessary.

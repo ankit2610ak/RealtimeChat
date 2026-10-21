@@ -3,23 +3,23 @@
 
 set -e
 
-create_or_edit_label() {
-    name="$1"
-    color="$2"
-    description="$3"
+labels=(
+  "status: pending|fbca04|Review items pending action"
+  "status: in-progress|1d76db|Review items currently being addressed"
+  "status: resolved|0e8a16|Review items successfully resolved"
+  "status: closed|6c757d|Review items closed or out of scope"
+)
 
-    if gh label list --json name -q ".[].name" 2>/dev/null | grep -qx "$name"; then
-        echo "Label '$name' exists, updating..."
-        gh label edit "$name" --color "$color" --description "$description"
-    else
-        echo "Creating label '$name'..."
-        gh label create "$name" --color "$color" --description "$description"
-    fi
-}
+for label_info in "${labels[@]}"; do
+  IFS="|" read -r name color desc <<< "$label_info"
 
-create_or_edit_label "status: pending" "fbca04" "Review items pending action"
-create_or_edit_label "status: in-progress" "1d76db" "Review items currently being addressed"
-create_or_edit_label "status: resolved" "0e8a16" "Review items successfully resolved"
-create_or_edit_label "status: closed" "6c757d" "Review items closed or out of scope"
+  if gh label list --search "$name" 2>/dev/null | grep -q "$name"; then
+    echo "Updating label: $name"
+    gh label edit "$name" --color "$color" --description "$desc"
+  else
+    echo "Creating label: $name"
+    gh label create "$name" --color "$color" --description "$desc"
+  fi
+done
 
 echo "PR status labels created/updated successfully!"
