@@ -24,3 +24,12 @@ dependencyResolutionManagement {
 
 rootProject.name = "RealtimeChat"
 include(":app")
+include(":core:model")
+include(":core:crypto")
+include(":core:network")
+include(":core:network:firebase")
+include(":core:database")
+include(":core:designsystem")
+include(":feature:auth")
+include(":feature:chat")
+include(":feature:group")
