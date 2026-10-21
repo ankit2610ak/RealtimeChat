@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.myapplication"
+    namespace = "com.example.realtimechat"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.myapplication"
+        applicationId = "com.example.realtimechat"
         minSdk = 28
         targetSdk = 37
         versionCode = 1
