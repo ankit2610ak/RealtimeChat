@@ -17,8 +17,7 @@ class CryptoEngineTest {
         val originalMessage = "Hello, secure E2EE chat!"
 
         val encryptedPayload = cryptoEngine.encrypt(originalMessage, secretKey)
-        assertNotNull(encryptedPayload.ciphertext)
-        assertNotNull(encryptedPayload.iv)
+        assertNotNull(encryptedPayload.payload)
 
         val decryptedMessage = cryptoEngine.decrypt(encryptedPayload, secretKey)
         assertEquals(originalMessage, decryptedMessage)
@@ -64,9 +63,8 @@ class CryptoEngineTest {
         val original = "Secret Message"
         val encrypted = cryptoEngine.encrypt(original, secretKey)
 
-        // Tamper with ciphertext
-        val tamperedCiphertext = encrypted.ciphertext.dropLast(1) + "A"
-        val tamperedPayload = encrypted.copy(ciphertext = tamperedCiphertext)
+        // Tamper with payload
+        val tamperedPayload = EncryptedPayload(payload = encrypted.payload.dropLast(1) + "A")
 
         cryptoEngine.decrypt(tamperedPayload, secretKey)
     }

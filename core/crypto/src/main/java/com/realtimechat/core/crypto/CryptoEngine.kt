@@ -1,7 +1,10 @@
 package com.realtimechat.core.crypto
 
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.nio.ByteBuffer
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.SecureRandom
@@ -15,13 +18,7 @@ import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
 
 data class EncryptedPayload(
-    val ciphertext: String, // Base64 encoded
-    val iv: String          // Base64 encoded initialization vector
-)
-
-data class EcdhKeyPair(
-    val publicKey: String,  // Base64 encoded
-    val privateKey: String  // Base64 encoded
+    val payload: String // Base64 encoded (IV + Ciphertext)
 )
 
 class CryptoEngine {
@@ -36,38 +33,70 @@ class CryptoEngine {
 
     /**
      * Encrypts plaintext message payload using AES-256-GCM with a symmetric shared key on Default dispatcher.
+     * Prepends 12-byte IV to ciphertext bytes and encodes as Base64.
      */
     suspend fun encrypt(plaintext: String, secretKey: ByteArray): EncryptedPayload = withContext(Dispatchers.Default) {
-        val iv = ByteArray(IV_LENGTH_BYTE).apply {
-            SecureRandom().nextBytes(this)
-        }
-        val cipher = Cipher.getInstance(AES_TRANSFORMATION).apply {
-            init(Cipher.ENCRYPT_MODE, SecretKeySpec(secretKey, "AES"), GCMParameterSpec(GCM_TAG_LENGTH_BIT, iv))
-        }
+        val cipher = Cipher.getInstance(AES_TRANSFORMATION)
+        val iv = ByteArray(IV_LENGTH_BYTE).apply { SecureRandom().nextBytes(this) }
+        val spec = GCMParameterSpec(GCM_TAG_LENGTH_BIT, iv)
+        cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(secretKey, "AES"), spec)
+
         val ciphertextBytes = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
+        val combined = ByteBuffer.allocate(iv.size + ciphertextBytes.size).put(iv).put(ciphertextBytes).array()
+
         EncryptedPayload(
-            ciphertext = Base64.getEncoder().encodeToString(ciphertextBytes),
-            iv = Base64.getEncoder().encodeToString(iv)
+            payload = Base64.getEncoder().encodeToString(combined)
         )
     }
 
     /**
-     * Decrypts ciphertext message payload using AES-256-GCM with a symmetric shared key on Default dispatcher.
+     * Decrypts ciphertext message payload (IV + Ciphertext) using AES-256-GCM with a symmetric shared key on Default dispatcher.
      */
     suspend fun decrypt(payload: EncryptedPayload, secretKey: ByteArray): String = withContext(Dispatchers.Default) {
-        val iv = Base64.getDecoder().decode(payload.iv)
-        val ciphertextBytes = Base64.getDecoder().decode(payload.ciphertext)
-        val cipher = Cipher.getInstance(AES_TRANSFORMATION).apply {
-            init(Cipher.DECRYPT_MODE, SecretKeySpec(secretKey, "AES"), GCMParameterSpec(GCM_TAG_LENGTH_BIT, iv))
-        }
+        val combined = Base64.getDecoder().decode(payload.payload)
+        require(combined.size >= IV_LENGTH_BYTE) { "Invalid payload: too short to contain IV" }
+
+        val iv = combined.copyOfRange(0, IV_LENGTH_BYTE)
+        val ciphertextBytes = combined.copyOfRange(IV_LENGTH_BYTE, combined.size)
+
+        val cipher = Cipher.getInstance(AES_TRANSFORMATION)
+        val spec = GCMParameterSpec(GCM_TAG_LENGTH_BIT, iv)
+        cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(secretKey, "AES"), spec)
+
         val plaintextBytes = cipher.doFinal(ciphertextBytes)
         String(plaintextBytes, Charsets.UTF_8)
     }
 
     /**
      * Generates an Elliptic Curve Diffie-Hellman (ECDH) key pair for 1:1 secure end-to-end encryption.
+     * Supports Android KeyStore hardware-backed identity key generation when running on device (API 31+).
      */
-    fun generateEcdhKeyPair(): KeyPair {
+    fun generateEcdhKeyPair(alias: String? = null): KeyPair {
+        return if (alias != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            try {
+                val keyPairGenerator = KeyPairGenerator.getInstance(
+                    KeyProperties.KEY_ALGORITHM_EC,
+                    "AndroidKeyStore"
+                )
+                keyPairGenerator.initialize(
+                    KeyGenParameterSpec.Builder(
+                        alias,
+                        KeyProperties.PURPOSE_AGREE_KEY
+                    )
+                        .setAlgorithmParameterSpec(ECGenParameterSpec("secp256r1"))
+                        .setUserAuthenticationRequired(false)
+                        .build()
+                )
+                keyPairGenerator.generateKeyPair()
+            } catch (_: Exception) {
+                generateInMemoryEcdhKeyPair()
+            }
+        } else {
+            generateInMemoryEcdhKeyPair()
+        }
+    }
+
+    private fun generateInMemoryEcdhKeyPair(): KeyPair {
         val keyPairGenerator = KeyPairGenerator.getInstance("EC")
         keyPairGenerator.initialize(ECGenParameterSpec("secp256r1"), SecureRandom())
         return keyPairGenerator.generateKeyPair()
