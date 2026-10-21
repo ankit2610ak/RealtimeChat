@@ -9,7 +9,7 @@
 
 ---
 
-## Review Feedback & Status Tracking
+## Review Feedback & Status Tracking *(Optional for small PRs)*
 *Please track review comments using standard status tags (`⏳ Pending`, `🔄 In Progress`, `✅ Resolved`, `❌ Closed`) and interactive task lists.*
 
 | Status | Category | Note / Item Reference |

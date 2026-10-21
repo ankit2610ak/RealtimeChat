@@ -3,6 +3,8 @@ name: Setup PR Status Labels
 on:
   workflow_dispatch:
   push:
+    branches:
+      - main
     paths:
       - '.github/setup_labels.sh'
       - '.github/workflows/labels.yml'

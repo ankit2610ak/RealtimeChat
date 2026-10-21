@@ -1,0 +1,9 @@
+com.realtimechat.feature.group-pngs-0 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/build/generated/res/pngs/debug
+com.realtimechat.feature.group-updated_navigation_xml-1 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/build/generated/updated_navigation_xml/debug
+com.realtimechat.feature.group-mergeDebugResources-2 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
+com.realtimechat.feature.group-mergeDebugResources-3 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
+com.realtimechat.feature.group-debug-4 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/build/intermediates/merged_res/debug/mergeDebugResources
+com.realtimechat.feature.group-debug-5 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/build/intermediates/packaged_res/debug/packageDebugResources
+com.realtimechat.feature.group-debug-6 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/src/debug/res
+com.realtimechat.feature.group-main-7 /Users/ak/Documents/Github projects/RealtimeChat/feature/group/src/main/res
+gradleHome-0 /Users/ak/.gradle
