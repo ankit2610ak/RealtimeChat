@@ -1,5 +1,7 @@
 package com.realtimechat.core.crypto
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.SecureRandom
@@ -29,12 +31,13 @@ class CryptoEngine {
         private const val GCM_TAG_LENGTH_BIT = 128
         private const val IV_LENGTH_BYTE = 12
         private const val KEY_LENGTH_BIT = 256
+        private const val PBKDF2_ITERATIONS = 600_000
     }
 
     /**
-     * Encrypts plaintext message payload using AES-256-GCM with a symmetric shared key.
+     * Encrypts plaintext message payload using AES-256-GCM with a symmetric shared key on Default dispatcher.
      */
-    fun encrypt(plaintext: String, secretKey: ByteArray): EncryptedPayload {
+    suspend fun encrypt(plaintext: String, secretKey: ByteArray): EncryptedPayload = withContext(Dispatchers.Default) {
         val iv = ByteArray(IV_LENGTH_BYTE).apply {
             SecureRandom().nextBytes(this)
         }
@@ -42,23 +45,23 @@ class CryptoEngine {
             init(Cipher.ENCRYPT_MODE, SecretKeySpec(secretKey, "AES"), GCMParameterSpec(GCM_TAG_LENGTH_BIT, iv))
         }
         val ciphertextBytes = cipher.doFinal(plaintext.toByteArray(Charsets.UTF_8))
-        return EncryptedPayload(
+        EncryptedPayload(
             ciphertext = Base64.getEncoder().encodeToString(ciphertextBytes),
             iv = Base64.getEncoder().encodeToString(iv)
         )
     }
 
     /**
-     * Decrypts ciphertext message payload using AES-256-GCM with a symmetric shared key.
+     * Decrypts ciphertext message payload using AES-256-GCM with a symmetric shared key on Default dispatcher.
      */
-    fun decrypt(payload: EncryptedPayload, secretKey: ByteArray): String {
+    suspend fun decrypt(payload: EncryptedPayload, secretKey: ByteArray): String = withContext(Dispatchers.Default) {
         val iv = Base64.getDecoder().decode(payload.iv)
         val ciphertextBytes = Base64.getDecoder().decode(payload.ciphertext)
         val cipher = Cipher.getInstance(AES_TRANSFORMATION).apply {
             init(Cipher.DECRYPT_MODE, SecretKeySpec(secretKey, "AES"), GCMParameterSpec(GCM_TAG_LENGTH_BIT, iv))
         }
         val plaintextBytes = cipher.doFinal(ciphertextBytes)
-        return String(plaintextBytes, Charsets.UTF_8)
+        String(plaintextBytes, Charsets.UTF_8)
     }
 
     /**
@@ -71,24 +74,24 @@ class CryptoEngine {
     }
 
     /**
-     * Derives a shared symmetric AES-256 key from local private key and remote public key using ECDH.
+     * Derives a shared symmetric AES-256 key from local private key and remote public key using ECDH on Default dispatcher.
      */
-    fun deriveSharedSecret(privateKey: java.security.PrivateKey, publicKey: java.security.PublicKey): ByteArray {
+    suspend fun deriveSharedSecret(privateKey: java.security.PrivateKey, publicKey: java.security.PublicKey): ByteArray = withContext(Dispatchers.Default) {
         val keyAgreement = KeyAgreement.getInstance("ECDH")
         keyAgreement.init(privateKey)
         keyAgreement.doPhase(publicKey, true)
         val sharedSecret = keyAgreement.generateSecret()
         val digest = java.security.MessageDigest.getInstance("SHA-256")
-        return digest.digest(sharedSecret)
+        digest.digest(sharedSecret)
     }
 
     /**
-     * Derives a symmetric group chat key from a base passphrase / group secret and salt using PBKDF2.
+     * Derives a symmetric group chat key from a base passphrase / group secret and salt using PBKDF2 (600,000 iterations) on Default dispatcher.
      */
-    fun deriveGroupKey(passphrase: CharArray, salt: ByteArray): ByteArray {
+    suspend fun deriveGroupKey(passphrase: CharArray, salt: ByteArray): ByteArray = withContext(Dispatchers.Default) {
         val factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
-        val spec = PBEKeySpec(passphrase, salt, 65536, KEY_LENGTH_BIT)
+        val spec = PBEKeySpec(passphrase, salt, PBKDF2_ITERATIONS, KEY_LENGTH_BIT)
         val tmp = factory.generateSecret(spec)
-        return tmp.encoded
+        tmp.encoded
     }
 }

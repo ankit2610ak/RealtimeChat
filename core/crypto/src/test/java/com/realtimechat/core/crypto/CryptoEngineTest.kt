@@ -1,16 +1,18 @@
 package com.realtimechat.core.crypto
 
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import java.security.SecureRandom
+import javax.crypto.AEADBadTagException
 
 class CryptoEngineTest {
 
     private val cryptoEngine = CryptoEngine()
 
     @Test
-    fun testSymmetricEncryptionDecryptionRoundtrip() {
+    fun testSymmetricEncryptionDecryptionRoundtrip() = runTest {
         val secretKey = ByteArray(32).apply { SecureRandom().nextBytes(this) }
         val originalMessage = "Hello, secure E2EE chat!"
 
@@ -23,21 +25,15 @@ class CryptoEngineTest {
     }
 
     @Test
-    fun testEcdhKeyExchangeAndRoundtrip() {
-        // Alice generates key pair
+    fun testEcdhKeyExchangeAndRoundtrip() = runTest {
         val aliceKeyPair = cryptoEngine.generateEcdhKeyPair()
-        // Bob generates key pair
         val bobKeyPair = cryptoEngine.generateEcdhKeyPair()
 
-        // Alice derives shared secret with Bob's public key
         val aliceSharedKey = cryptoEngine.deriveSharedSecret(aliceKeyPair.private, bobKeyPair.public)
-        // Bob derives shared secret with Alice's public key
         val bobSharedKey = cryptoEngine.deriveSharedSecret(bobKeyPair.private, aliceKeyPair.public)
 
-        // Both shared keys must be identical
         org.junit.Assert.assertArrayEquals(aliceSharedKey, bobSharedKey)
 
-        // Encrypt message from Alice to Bob
         val message = "Secret message from Alice to Bob via ECDH"
         val encrypted = cryptoEngine.encrypt(message, aliceSharedKey)
         val decrypted = cryptoEngine.decrypt(encrypted, bobSharedKey)
@@ -46,7 +42,7 @@ class CryptoEngineTest {
     }
 
     @Test
-    fun testGroupKeyDerivationAndRoundtrip() {
+    fun testGroupKeyDerivationAndRoundtrip() = runTest {
         val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
         val passphrase = "super-secret-group-passphrase".toCharArray()
 
@@ -60,5 +56,18 @@ class CryptoEngineTest {
         val decrypted = cryptoEngine.decrypt(encrypted, groupKey2)
 
         assertEquals(chatMessage, decrypted)
+    }
+
+    @Test(expected = AEADBadTagException::class)
+    fun testDecryptionFailsWhenCiphertextTampered() = runTest {
+        val secretKey = ByteArray(32).apply { SecureRandom().nextBytes(this) }
+        val original = "Secret Message"
+        val encrypted = cryptoEngine.encrypt(original, secretKey)
+
+        // Tamper with ciphertext
+        val tamperedCiphertext = encrypted.ciphertext.dropLast(1) + "A"
+        val tamperedPayload = encrypted.copy(ciphertext = tamperedCiphertext)
+
+        cryptoEngine.decrypt(tamperedPayload, secretKey)
     }
 }
