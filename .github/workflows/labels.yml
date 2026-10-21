@@ -1,12 +1,19 @@
 name: Setup PR Status Labels
 
 on:
+  workflow_dispatch:
   push:
-    branches: [ main ]
+    paths:
+      - '.github/setup_labels.sh'
+      - '.github/workflows/labels.yml'
 
 jobs:
   setup-labels:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -15,4 +22,5 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          bash .github/setup_labels.sh
+          chmod +x .github/setup_labels.sh
+          ./.github/setup_labels.sh

@@ -10,12 +10,11 @@
 ---
 
 ## Review Feedback & Status Tracking
-*Please track review comments using the status conventions below (`⏳ Pending`, `🔄 In Progress`, `✅ Resolved`, `❌ Closed`).*
+*Please track review comments using standard status tags (`⏳ Pending`, `🔄 In Progress`, `✅ Resolved`, `❌ Closed`) and interactive task lists.*
 
-| Review Item / Comment | Status | Resolution / Notes |
-|-----------------------|--------|--------------------|
-| 1.                    | ⏳ Pending |                    |
-| 2.                    | ⏳ Pending |                    |
+| Status | Category | Note / Item Reference |
+| :--- | :--- | :--- |
+| ⏳ Pending | Architecture | [ ] Example: Optimize baseline profiles or thread dispatchers |
 
 ---
 
