@@ -1,0 +1,9 @@
+com.realtimechat.core.crypto-pngs-0 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/build/generated/res/pngs/debug
+com.realtimechat.core.crypto-updated_navigation_xml-1 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/build/generated/updated_navigation_xml/debug
+com.realtimechat.core.crypto-mergeDebugResources-2 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/build/intermediates/incremental/debug/mergeDebugResources/merged.dir
+com.realtimechat.core.crypto-mergeDebugResources-3 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/build/intermediates/incremental/debug/mergeDebugResources/stripped.dir
+com.realtimechat.core.crypto-debug-4 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/build/intermediates/merged_res/debug/mergeDebugResources
+com.realtimechat.core.crypto-debug-5 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/build/intermediates/packaged_res/debug/packageDebugResources
+com.realtimechat.core.crypto-debug-6 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/src/debug/res
+com.realtimechat.core.crypto-main-7 /Users/ak/Documents/Github projects/RealtimeChat/core/crypto/src/main/res
+gradleHome-0 /Users/ak/.gradle
