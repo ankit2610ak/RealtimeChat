@@ -2,17 +2,14 @@ package com.realtimechat.core.network
 
 import kotlinx.coroutines.flow.Flow
 
-data class EncryptedMessageDto(
-    val messageId: String,
-    val chatId: String,
-    val senderId: String,
-    val ciphertext: String,
-    val iv: String,
-    val timestamp: Long
-)
-
 interface ChatRemoteDataSource {
-    suspend fun sendMessage(chatId: String, message: EncryptedMessageDto): Result<Unit>
-    fun observeMessages(chatId: String): Flow<List<EncryptedMessageDto>>
-    suspend fun createChat(chatId: String, participants: List<String>): Result<Unit>
+    suspend fun sendMessage(conversationId: String, messageDto: MessageDto): Result<Unit>
+    fun observeMessages(conversationId: String): Flow<List<MessageDto>>
+    suspend fun fetchMessageHistory(
+        conversationId: String,
+        limit: Int = 20,
+        lastTimestamp: Long? = null
+    ): Result<List<MessageDto>>
+    suspend fun createConversation(conversationDto: ConversationDto): Result<Unit>
+    fun observeConversations(userId: String): Flow<List<ConversationDto>>
 }

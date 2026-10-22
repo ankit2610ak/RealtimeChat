@@ -1,0 +1,74 @@
+package com.realtimechat.core.data
+
+import com.realtimechat.core.crypto.CryptoEngine
+import com.realtimechat.core.network.ChatRemoteDataSource
+import com.realtimechat.core.network.ConversationDto
+import com.realtimechat.core.network.MessageDto
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.security.SecureRandom
+
+class ChatRepositoryTest {
+
+    private val cryptoEngine = CryptoEngine()
+
+    private class FakeChatRemoteDataSource : ChatRemoteDataSource {
+        val sentMessages = mutableListOf<MessageDto>()
+
+        override suspend fun sendMessage(conversationId: String, messageDto: MessageDto): Result<Unit> {
+            sentMessages.add(messageDto)
+            return Result.success(Unit)
+        }
+
+        override fun observeMessages(conversationId: String): Flow<List<MessageDto>> {
+            return flowOf(sentMessages)
+        }
+
+        override suspend fun fetchMessageHistory(
+            conversationId: String,
+            limit: Int,
+            lastTimestamp: Long?
+        ): Result<List<MessageDto>> {
+            return Result.success(sentMessages.take(limit))
+        }
+
+        override suspend fun createConversation(conversationDto: ConversationDto): Result<Unit> {
+            return Result.success(Unit)
+        }
+
+        override fun observeConversations(userId: String): Flow<List<ConversationDto>> {
+            return flowOf(emptyList())
+        }
+    }
+
+    @Test
+    fun testSendMessageAndObserveMessagesRoundtrip() = runTest {
+        val fakeDataSource = FakeChatRemoteDataSource()
+        val repository = ChatRepository(remoteDataSource = fakeDataSource, mediaDataSource = null, cryptoEngine = cryptoEngine)
+
+        val secretKey = ByteArray(32).apply { SecureRandom().nextBytes(this) }
+        val plaintext = "Hello Secret Message"
+        val conversationId = "chat_123"
+        val senderId = "usr_alice"
+
+        // 1. Send encrypted message
+        val sendResult = repository.sendMessage(conversationId, plaintext, secretKey, senderId)
+        assertTrue(sendResult.isSuccess)
+        assertEquals(1, fakeDataSource.sentMessages.size)
+
+        // Verify sent message DTO payload is encrypted (not plaintext)
+        val sentDto = fakeDataSource.sentMessages.first()
+        assertTrue(sentDto.payload != plaintext)
+
+        // 2. Observe and decrypt messages
+        val messages = repository.observeMessages(conversationId, secretKey).first()
+        assertEquals(1, messages.size)
+        assertEquals(plaintext, messages.first().plaintext)
+        assertEquals(senderId, messages.first().senderId)
+    }
+}

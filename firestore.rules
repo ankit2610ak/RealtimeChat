@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isUser(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isParticipant(participants) {
+      return isAuthenticated() && (request.auth.uid in participants);
+    }
+
+    // Users collection rules
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isUser(userId);
+    }
+
+    // Conversations collection & sub-collections
+    match /conversations/{conversationId} {
+      allow read, update: if isAuthenticated() && isParticipant(resource.data.participants);
+      allow create: if isAuthenticated() && isParticipant(request.resource.data.participants);
+      allow delete: if false; // Disallow conversation deletion for compliance
+
+      // Messages sub-collection rules
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() && isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants);
+        allow create: if isAuthenticated()
+                      && isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants)
+                      && request.resource.data.senderId == request.auth.uid;
+        allow update, delete: if false; // Immutable audit log
+      }
+
+      // Group metadata sub-collection rules
+      match /group_metadata/{metadataId} {
+        allow read, write: if isAuthenticated() && isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants);
+      }
+    }
+  }
+}
