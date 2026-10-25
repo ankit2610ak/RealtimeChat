@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Firestore Database Schema Examples",
+  "title": "Firestore Conversations Schema & Unread Count Strategy",
   "collections": {
     "users": {
       "path": "users/{uid}",
@@ -9,18 +9,30 @@
         "displayName": "Alice Smith",
         "email": "alice@example.com",
         "publicKey": "MHYwEAYHKoZIzj0CAQYI...",
-        "createdAt": "2026-10-21T18:00:00Z"
+        "createdAt": 1729533600000
       }
     },
     "conversations": {
       "path": "conversations/{conversationId}",
       "example": {
-        "conversationId": "chat_123456",
+        "id": "chat_123456",
         "isGroup": false,
         "title": "Alice & Bob",
+        "avatarUrl": "https://firebasestorage.googleapis.com/v0/b/...",
         "participants": ["usr_987654321", "usr_123456789"],
-        "updatedAt": "2026-10-21T18:05:00Z",
-        "lastMessageSnippet": "[Encrypted Payload]"
+        "updatedAt": 1729533900000,
+        "lastMessageCiphertext": "a1b2c3d4e5f6g7h8i9j0...",
+        "lastMessageIv": "x1y2z3a4b5c6",
+        "lastMessageTimestamp": 1729533900000,
+        "lastMessageSenderName": "Alice",
+        "unreadCounts": {
+          "usr_987654321": 0,
+          "usr_123456789": 3
+        }
+      },
+      "unreadCountStrategy": {
+        "increment": "When a message is sent to a conversation, Firestore batch / transaction updates unreadCounts using FieldValue.increment(1) for all participants except the sender.",
+        "reset": "When a user opens the conversation (ChatScreen launched), Firestore updates `unreadCounts.{currentUserId}` to 0."
       }
     },
     "messages": {
@@ -33,16 +45,6 @@
         "iv": "x1y2z3a4b5c6",
         "mediaUrl": "https://firebasestorage.googleapis.com/v0/b/...",
         "timestamp": 1729533900000
-      }
-    },
-    "group_metadata": {
-      "path": "conversations/{conversationId}/group_metadata/keys",
-      "example": {
-        "groupId": "group_998877",
-        "encryptedGroupKeys": {
-          "usr_987654321": "enc_key_alice_...",
-          "usr_123456789": "enc_key_bob_..."
-        }
       }
     }
   }

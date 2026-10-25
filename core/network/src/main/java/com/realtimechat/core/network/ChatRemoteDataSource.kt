@@ -12,4 +12,5 @@ interface ChatRemoteDataSource {
     ): Result<List<MessageDto>>
     suspend fun createConversation(conversationDto: ConversationDto): Result<Unit>
     fun observeConversations(userId: String): Flow<List<ConversationDto>>
+    suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit>
 }
