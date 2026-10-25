@@ -44,6 +44,10 @@ class ChatRepositoryTest {
         override fun observeConversations(userId: String): Flow<List<ConversationDto>> {
             return flowOf(emptyList())
         }
+
+        override suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> {
+            return Result.success(Unit)
+        }
     }
 
     @Test

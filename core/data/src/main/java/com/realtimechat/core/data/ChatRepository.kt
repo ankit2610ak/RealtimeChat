@@ -2,6 +2,7 @@ package com.realtimechat.core.data
 
 import com.realtimechat.core.crypto.CryptoEngine
 import com.realtimechat.core.crypto.EncryptedPayload
+import com.realtimechat.core.model.Conversation
 import com.realtimechat.core.model.Message
 import com.realtimechat.core.network.ChatRemoteDataSource
 import com.realtimechat.core.network.MediaRemoteDataSource
@@ -20,8 +21,63 @@ class ChatRepository(
 ) {
 
     /**
+     * Observes real-time conversations for a user.
+     * Decrypts last messages on Dispatchers.Default to prevent UI composition jank.
+     */
+    fun observeConversations(
+        userId: String,
+        conversationKeys: Map<String, ByteArray> = emptyMap()
+    ): Flow<List<Conversation>> {
+        return remoteDataSource.observeConversations(userId)
+            .map { dtoList ->
+                withContext(Dispatchers.Default) {
+                    dtoList.map { dto ->
+                        val secretKey = conversationKeys[dto.id]
+                        val ciphertext = dto.lastMessageCiphertext
+                        val decryptedLastMsg = if (secretKey != null && !ciphertext.isNullOrEmpty()) {
+                            try {
+                                val text = cryptoEngine.decrypt(EncryptedPayload(ciphertext), secretKey)
+                                val senderName = dto.lastMessageSenderName
+                                if (!senderName.isNullOrEmpty() && dto.isGroup) {
+                                    "$senderName: $text"
+                                } else {
+                                    text
+                                }
+                            } catch (_: Exception) {
+                                "[Encrypted Message]"
+                            }
+                        } else if (!ciphertext.isNullOrEmpty()) {
+                            ciphertext
+                        } else {
+                            "[Encrypted Message]"
+                        }
+
+                        Conversation(
+                            id = dto.id,
+                            title = dto.title.ifEmpty { "Chat" },
+                            avatarUrl = dto.avatarUrl,
+                            isGroup = dto.isGroup,
+                            lastMessageText = decryptedLastMsg,
+                            lastMessageTimestamp = dto.lastMessageTimestamp.takeIf { it > 0 } ?: dto.updatedAt,
+                            unreadCount = dto.unreadCounts[userId] ?: 0,
+                            participants = dto.participants
+                        )
+                    }
+                }
+            }
+            .flowOn(Dispatchers.IO)
+    }
+
+    /**
+     * Resets unread count when a conversation is opened.
+     */
+    suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            remoteDataSource.markConversationAsRead(conversationId, userId)
+        }
+
+    /**
      * Sends an encrypted 1:1 or Group message on Dispatchers.IO.
-     * Plaintext payload is encrypted BEFORE writing to Firestore.
      */
     suspend fun sendMessage(
         conversationId: String,
@@ -54,7 +110,6 @@ class ChatRepository(
 
     /**
      * Listens for realtime encrypted messages and decrypts payloads on Dispatchers.IO.
-     * Never logs plaintext messages or private keys.
      */
     fun observeMessages(conversationId: String, secretKey: ByteArray): Flow<List<Message>> {
         return remoteDataSource.observeMessages(conversationId)

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.realtimechat"
+    namespace = "com.realtimechat"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.realtimechat"
+        applicationId = "com.realtimechat"
         minSdk = 28
         targetSdk = 34
         versionCode = 1
@@ -37,10 +37,21 @@ android {
 
 dependencies {
     implementation(project(":core:model"))
+    implementation(project(":core:crypto"))
+    implementation(project(":core:data"))
+    implementation(project(":core:network"))
+    implementation(project(":core:network:firebase"))
     implementation(project(":core:designsystem"))
     implementation(project(":feature:auth"))
     implementation(project(":feature:chat"))
     implementation(project(":feature:group"))
+    implementation(project(":feature:conversations"))
+
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.storage)
+    implementation(libs.kotlinx.coroutines.playServices)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
