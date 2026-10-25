@@ -48,6 +48,7 @@ import com.realtimechat.core.model.Conversation
 fun ConversationsScreen(
     currentUserId: String,
     viewModel: ConversationsViewModel,
+    conversationKeys: Map<String, ByteArray> = emptyMap(),
     onConversationClicked: (Conversation) -> Unit,
     onNewDirectChatClicked: () -> Unit,
     onNewGroupChatClicked: () -> Unit,
@@ -57,10 +58,10 @@ fun ConversationsScreen(
     var isSearchActive by remember { mutableStateOf(false) }
     var selectedFilterCategory by remember { mutableStateOf("All") }
 
-    val filterCategories = listOf("All", "Personal", "Design", "Work", "Favourites")
+    val filterCategories = listOf("All", "Unread")
 
-    LaunchedEffect(currentUserId) {
-        viewModel.observeConversations(currentUserId)
+    LaunchedEffect(currentUserId, conversationKeys) {
+        viewModel.observeConversations(currentUserId, conversationKeys)
     }
 
     Scaffold(
@@ -102,7 +103,7 @@ fun ConversationsScreen(
                     }
                 )
 
-                // Category Filter Chips
+                // Category Filter Tabs (All & Unread)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -172,29 +173,47 @@ fun ConversationsScreen(
                 }
 
                 is ConversationsUiState.Success -> {
-                    val filteredByChip = if (selectedFilterCategory == "All") {
-                        state.filteredConversations
+                    val filteredByTab = if (selectedFilterCategory == "Unread") {
+                        state.filteredConversations.filter { it.unreadCount > 0 }
                     } else {
-                        state.filteredConversations.filter {
-                            if (selectedFilterCategory == "Personal") !it.isGroup
-                            else if (selectedFilterCategory == "Work" || selectedFilterCategory == "Design") it.isGroup
-                            else true
-                        }
+                        state.filteredConversations
                     }
 
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
-                        items(
-                            items = filteredByChip,
-                            key = { it.id }
-                        ) { conversation ->
-                            ConversationListItem(
-                                conversation = conversation,
-                                onClick = {
-                                    viewModel.markAsRead(conversation.id, currentUserId)
-                                    onConversationClicked(conversation)
-                                }
+                    if (filteredByTab.isEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "No unread messages",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
                             )
-                            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            Text(
+                                text = "All caught up! Switch to 'All' to view all chats.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            items(
+                                items = filteredByTab,
+                                key = { it.id }
+                            ) { conversation ->
+                                ConversationListItem(
+                                    conversation = conversation,
+                                    onClick = {
+                                        viewModel.markAsRead(conversation.id, currentUserId)
+                                        onConversationClicked(conversation)
+                                    }
+                                )
+                                Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                            }
                         }
                     }
                 }

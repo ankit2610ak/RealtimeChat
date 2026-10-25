@@ -13,13 +13,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,10 +50,15 @@ fun ChatScreen(
     viewModel: ChatViewModel,
     conversationId: String,
     secretKey: ByteArray,
+    onBackClicked: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    LaunchedEffect(conversationId) {
+        viewModel.observeMessages(conversationId, secretKey)
+    }
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -64,7 +75,17 @@ fun ChatScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(text = conversationTitle, fontWeight = FontWeight.Bold) }
+                title = { Text(text = conversationTitle, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onBackClicked) {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {}) {
+                        Icon(imageVector = Icons.Default.MoreVert, contentDescription = "Options")
+                    }
+                }
             )
         },
         bottomBar = {
@@ -93,37 +114,46 @@ fun ChatScreen(
                     )
                 }
                 is UiState.Success -> {
-                    val groupedMessages = state.data.groupBy {
-                        SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(it.timestamp))
-                    }
+                    if (state.data.isEmpty()) {
+                        Text(
+                            text = "No messages in this chat yet.\nSend a message below!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.align(Alignment.Center)
+                        )
+                    } else {
+                        val groupedMessages = state.data.groupBy {
+                            SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date(it.timestamp))
+                        }
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        groupedMessages.forEach { (dateHeader, messages) ->
-                            stickyHeader {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
-                                        .padding(vertical = 4.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = dateHeader,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            groupedMessages.forEach { (dateHeader, messages) ->
+                                stickyHeader {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f))
+                                            .padding(vertical = 4.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = dateHeader,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                items(messages, key = { it.messageId }) { message ->
+                                    ChatBubble(
+                                        text = message.plaintext,
+                                        isFromMe = message.senderId == currentUserId,
+                                        timestamp = message.timestamp,
+                                        uploadProgress = uiState.uploadProgress
                                     )
                                 }
-                            }
-
-                            items(messages, key = { it.messageId }) { message ->
-                                ChatBubble(
-                                    text = message.plaintext,
-                                    isFromMe = message.senderId == currentUserId,
-                                    timestamp = message.timestamp,
-                                    uploadProgress = uiState.uploadProgress
-                                )
                             }
                         }
                     }
