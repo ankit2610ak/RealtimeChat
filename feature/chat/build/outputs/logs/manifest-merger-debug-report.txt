@@ -1,16 +1,16 @@
 -- Merging decision tree log ---
 manifest
-ADDED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml:2:13-83
-INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml:2:13-83
+ADDED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml:2:13-83
+INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml:2:13-83
 	package
-		INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml
+		INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml
 	xmlns:android
-		ADDED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml:2:23-81
+		ADDED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml:2:23-81
 uses-sdk
-INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml reason: use-sdk injection requested
-INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml
-INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml
+INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml reason: use-sdk injection requested
+INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml
+INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml
 	android:targetSdkVersion
-		INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml
+		INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml
 	android:minSdkVersion
-		INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest15202473914762047554.xml
+		INJECTED from /Users/ak/Documents/Github projects/RealtimeChat/feature/chat/build/intermediates/tmp/ProcessLibraryManifest/debug/tempAndroidManifest2993816816400811090.xml

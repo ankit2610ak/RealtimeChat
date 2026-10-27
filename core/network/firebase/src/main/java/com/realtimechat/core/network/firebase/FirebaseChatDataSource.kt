@@ -14,8 +14,11 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 class FirebaseChatDataSource(
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firestoreProvider: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() }
 ) : ChatRemoteDataSource {
+
+    private val firestore: FirebaseFirestore
+        get() = firestoreProvider()
 
     override suspend fun sendMessage(conversationId: String, messageDto: MessageDto): Result<Unit> =
         withContext(Dispatchers.IO) {
@@ -87,9 +90,9 @@ class FirebaseChatDataSource(
         withContext(Dispatchers.IO) {
             runCatching {
                 val docRef = firestore.collection("conversations")
-                    .document(conversationDto.conversationId.ifEmpty { firestore.collection("conversations").document().id })
+                    .document(conversationDto.id.ifEmpty { firestore.collection("conversations").document().id })
 
-                docRef.set(conversationDto.copy(conversationId = docRef.id)).await()
+                docRef.set(conversationDto.copy(id = docRef.id)).await()
                 Unit
             }
         }
@@ -101,7 +104,8 @@ class FirebaseChatDataSource(
 
         val listener = query.addSnapshotListener { snapshot, error ->
             if (error != null) {
-                close(error)
+                // If permission denied or firestore not enabled, emit empty list gracefully
+                trySend(emptyList())
                 return@addSnapshotListener
             }
             if (snapshot != null) {
@@ -116,4 +120,54 @@ class FirebaseChatDataSource(
             listener.remove()
         }
     }.flowOn(Dispatchers.IO)
+
+    override suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                firestore.collection("conversations")
+                    .document(conversationId)
+                    .update("unreadCounts.$userId", 0)
+                    .await()
+                Unit
+            }
+        }
+
+    override suspend fun getOrCreateDirectConversation(
+        currentUserId: String,
+        recipientUserId: String
+    ): Result<ConversationDto> = withContext(Dispatchers.IO) {
+        runCatching {
+            val sortedParticipants = listOf(currentUserId, recipientUserId).sorted()
+            val directChatId = "direct_${sortedParticipants[0]}_${sortedParticipants[1]}"
+
+            val docRef = firestore.collection("conversations").document(directChatId)
+            val snapshot = docRef.get().await()
+
+            if (snapshot.exists()) {
+                snapshot.toObject(ConversationDto::class.java) ?: throw IllegalStateException("Failed to parse conversation")
+            } else {
+                val newConv = ConversationDto(
+                    id = directChatId,
+                    title = "Chat with $recipientUserId",
+                    isGroup = false,
+                    participants = sortedParticipants,
+                    updatedAt = System.currentTimeMillis(),
+                    unreadCounts = mapOf(currentUserId to 0, recipientUserId to 0)
+                )
+                docRef.set(newConv).await()
+                newConv
+            }
+        }
+    }
+
+    override suspend fun deleteConversation(conversationId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                firestore.collection("conversations")
+                    .document(conversationId)
+                    .delete()
+                    .await()
+                Unit
+            }
+        }
 }

@@ -69,11 +69,39 @@ class ChatRepository(
     }
 
     /**
+     * Connects with a user to get or create a direct 1:1 conversation.
+     */
+    suspend fun getOrCreateDirectConversation(currentUserId: String, recipientUserId: String): Result<Conversation> =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                val dto = remoteDataSource.getOrCreateDirectConversation(currentUserId, recipientUserId).getOrThrow()
+                Conversation(
+                    id = dto.id,
+                    title = dto.title.ifEmpty { "Chat with $recipientUserId" },
+                    avatarUrl = dto.avatarUrl,
+                    isGroup = dto.isGroup,
+                    lastMessageText = dto.lastMessageCiphertext ?: "",
+                    lastMessageTimestamp = dto.lastMessageTimestamp.takeIf { it > 0 } ?: dto.updatedAt,
+                    unreadCount = dto.unreadCounts[currentUserId] ?: 0,
+                    participants = dto.participants
+                )
+            }
+        }
+
+    /**
      * Resets unread count when a conversation is opened.
      */
     suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> =
         withContext(Dispatchers.IO) {
             remoteDataSource.markConversationAsRead(conversationId, userId)
+        }
+
+    /**
+     * Deletes a conversation.
+     */
+    suspend fun deleteConversation(conversationId: String): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            remoteDataSource.deleteConversation(conversationId)
         }
 
     /**

@@ -48,6 +48,14 @@ class ChatRepositoryTest {
         override suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> {
             return Result.success(Unit)
         }
+
+        override suspend fun getOrCreateDirectConversation(currentUserId: String, recipientUserId: String): Result<ConversationDto> {
+            return Result.success(ConversationDto(id = "c_123", title = recipientUserId, participants = listOf(currentUserId, recipientUserId)))
+        }
+
+        override suspend fun deleteConversation(conversationId: String): Result<Unit> {
+            return Result.success(Unit)
+        }
     }
 
     @Test

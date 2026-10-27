@@ -1,6 +1,7 @@
 package com.realtimechat
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -20,6 +21,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.realtimechat.core.crypto.CryptoEngine
 import com.realtimechat.core.data.ChatRepository
 import com.realtimechat.core.designsystem.theme.RealtimeChatTheme
+import com.realtimechat.core.network.ChatRemoteDataSource
+import com.realtimechat.core.network.WebSocketChatDataSource
 import com.realtimechat.core.network.firebase.FirebaseChatDataSource
 import com.realtimechat.core.network.firebase.FirebaseMediaDataSource
 import com.realtimechat.feature.chat.ChatScreen
@@ -33,12 +36,21 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d(TAG, "MainActivity.onCreate() invoked.")
 
         val cryptoEngine = CryptoEngine()
-        val firestoreDataSource = FirebaseChatDataSource()
+        val remoteDataSource: ChatRemoteDataSource = try {
+            val ds = FirebaseChatDataSource()
+            Log.d(TAG, "Using FirebaseChatDataSource.")
+            ds
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to initialize FirebaseChatDataSource, falling back to WebSocketChatDataSource.", e)
+            WebSocketChatDataSource()
+        }
+
         val storageDataSource = FirebaseMediaDataSource()
         val repository = ChatRepository(
-            remoteDataSource = firestoreDataSource,
+            remoteDataSource = remoteDataSource,
             mediaDataSource = storageDataSource,
             cryptoEngine = cryptoEngine
         )
@@ -50,20 +62,23 @@ class MainActivity : ComponentActivity() {
             RealtimeChatTheme {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     var currentUserId by remember { mutableStateOf<String?>(null) }
-                    var authError by remember { mutableStateOf<String?>(null) }
 
                     LaunchedEffect(Unit) {
                         try {
                             val auth = FirebaseAuth.getInstance()
                             var currentUser = auth.currentUser
                             if (currentUser == null) {
+                                Log.d(TAG, "No authenticated user found. Signing in anonymously...")
                                 val authResult = auth.signInAnonymously().await()
                                 currentUser = authResult.user
+                                Log.d(TAG, "Anonymous sign-in successful: ${currentUser?.uid}")
+                            } else {
+                                Log.d(TAG, "Existing authenticated user found: ${currentUser.uid}")
                             }
-                            currentUserId = currentUser?.uid ?: "anonymous_user"
+                            currentUserId = currentUser?.uid ?: "usr_alice"
                         } catch (e: Exception) {
-                            authError = e.message ?: "Authentication failed"
-                            currentUserId = "fallback_user_123"
+                            Log.w(TAG, "Firebase Auth offline/network error. Falling back to local offline user ID.", e)
+                            currentUserId = "usr_alice"
                         }
                     }
 
@@ -89,7 +104,6 @@ class MainActivity : ComponentActivity() {
         conversationsViewModel: ConversationsViewModel,
         chatViewModel: ChatViewModel
     ) {
-        val cryptoEngine = CryptoEngine()
         val mockSecretKey = ByteArray(32) { 0x01 }
         var currentScreen by remember { mutableStateOf<Screen>(Screen.ConversationsList) }
 
@@ -100,19 +114,14 @@ class MainActivity : ComponentActivity() {
                     viewModel = conversationsViewModel,
                     conversationKeys = emptyMap(),
                     onConversationClicked = { conversation ->
+                        Log.d(TAG, "Navigating to ChatRoom for conversation: ${conversation.id}")
                         currentScreen = Screen.ChatRoom(
                             conversationId = conversation.id,
                             title = conversation.title,
                             isGroup = conversation.isGroup
                         )
                     },
-                    onNewDirectChatClicked = {
-                        currentScreen = Screen.ChatRoom(
-                            conversationId = "chat_direct_new",
-                            title = "New Contact",
-                            isGroup = false
-                        )
-                    },
+                    onNewDirectChatClicked = {},
                     onNewGroupChatClicked = {
                         currentScreen = Screen.GroupDetails(
                             conversationId = "group_new",
@@ -150,5 +159,9 @@ class MainActivity : ComponentActivity() {
         data object ConversationsList : Screen
         data class ChatRoom(val conversationId: String, val title: String, val isGroup: Boolean) : Screen
         data class GroupDetails(val conversationId: String, val title: String) : Screen
+    }
+
+    companion object {
+        private const val TAG = "MainActivity"
     }
 }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 class WebSocketChatDataSource : ChatRemoteDataSource {
 
     private val _messageFlow = MutableSharedFlow<List<MessageDto>>()
+    private val conversationsMap = mutableMapOf<String, ConversationDto>()
 
     override suspend fun sendMessage(conversationId: String, messageDto: MessageDto): Result<Unit> {
         return Result.success(Unit)
@@ -25,6 +26,7 @@ class WebSocketChatDataSource : ChatRemoteDataSource {
     }
 
     override suspend fun createConversation(conversationDto: ConversationDto): Result<Unit> {
+        conversationsMap[conversationDto.id] = conversationDto
         return Result.success(Unit)
     }
 
@@ -33,6 +35,29 @@ class WebSocketChatDataSource : ChatRemoteDataSource {
     }
 
     override suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> {
+        return Result.success(Unit)
+    }
+
+    override suspend fun getOrCreateDirectConversation(currentUserId: String, recipientUserId: String): Result<ConversationDto> {
+        val sortedParticipants = listOf(currentUserId, recipientUserId).sorted()
+        val directChatId = "direct_${sortedParticipants[0]}_${sortedParticipants[1]}"
+        val existing = conversationsMap[directChatId]
+        if (existing != null) {
+            return Result.success(existing)
+        }
+        val newConv = ConversationDto(
+            id = directChatId,
+            title = "Chat with $recipientUserId",
+            isGroup = false,
+            participants = sortedParticipants,
+            updatedAt = System.currentTimeMillis()
+        )
+        conversationsMap[directChatId] = newConv
+        return Result.success(newConv)
+    }
+
+    override suspend fun deleteConversation(conversationId: String): Result<Unit> {
+        conversationsMap.remove(conversationId)
         return Result.success(Unit)
     }
 }
