@@ -75,7 +75,7 @@ fun ChatScreen(
         modifier = modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text(text = conversationTitle, fontWeight = FontWeight.Bold) },
+                title = { Text(text = conversationTitle.replace("%20", " "), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBackClicked) {
                         Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -146,12 +146,15 @@ fun ChatScreen(
                                     }
                                 }
 
-                                items(messages, key = { it.messageId }) { message ->
+                                items(
+                                    items = messages,
+                                    key = { it.messageId }
+                                ) { message ->
+                                    val isMe = message.senderId == currentUserId
                                     ChatBubble(
                                         text = message.plaintext,
-                                        isFromMe = message.senderId == currentUserId,
-                                        timestamp = message.timestamp,
-                                        uploadProgress = uiState.uploadProgress
+                                        isFromMe = isMe,
+                                        timestamp = message.timestamp
                                     )
                                 }
                             }
@@ -163,11 +166,19 @@ fun ChatScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview(showBackground = true)
 @Composable
-fun PreviewChatScreenHeader() {
-    MaterialTheme {
-        TopAppBar(title = { Text("Alice Smith (E2EE Active)") })
-    }
+fun PreviewChatScreen() {
+    ChatScreen(
+        currentUserId = "usr_alice",
+        conversationTitle = "Kathryn Simmons",
+        viewModel = ChatViewModel(
+            com.realtimechat.core.data.ChatRepository(
+                remoteDataSource = com.realtimechat.core.network.WebSocketChatDataSource(),
+                mediaDataSource = null
+            )
+        ),
+        conversationId = "chat_1",
+        secretKey = ByteArray(32) { 0x01 }
+    )
 }

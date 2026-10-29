@@ -114,7 +114,7 @@ fun ConversationListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = conversation.title,
+                        text = conversation.title.replace("%20", " "),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = if (conversation.unreadCount > 0) FontWeight.Bold else FontWeight.SemiBold,
                         maxLines = 1,
@@ -136,7 +136,7 @@ fun ConversationListItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = conversation.lastMessageText.ifEmpty { "No messages yet" },
+                        text = formatLastMessagePreview(conversation.lastMessageText),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (conversation.unreadCount > 0) MaterialTheme.colorScheme.onSurface
                         else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -162,6 +162,15 @@ fun ConversationListItem(
                 }
             }
         }
+    }
+}
+
+private fun formatLastMessagePreview(text: String): String {
+    if (text.isBlank()) return "No messages yet"
+    return if (text.length > 20) {
+        text.take(20) + "..."
+    } else {
+        text
     }
 }
 
