@@ -48,6 +48,14 @@ class ChatRepositoryTest {
         override suspend fun markConversationAsRead(conversationId: String, userId: String): Result<Unit> {
             return Result.success(Unit)
         }
+
+        override suspend fun getOrCreateDirectConversation(currentUserId: String, recipientUserId: String): Result<ConversationDto> {
+            return Result.success(ConversationDto(id = "c_123", title = recipientUserId, participants = listOf(currentUserId, recipientUserId)))
+        }
+
+        override suspend fun deleteConversation(conversationId: String): Result<Unit> {
+            return Result.success(Unit)
+        }
     }
 
     @Test
@@ -74,5 +82,34 @@ class ChatRepositoryTest {
         assertEquals(1, messages.size)
         assertEquals(plaintext, messages.first().plaintext)
         assertEquals(senderId, messages.first().senderId)
+    }
+
+    @Test
+    fun testOfflineMessageQueueDeduplicationAndFlush() = runTest {
+        val fakeDataSource = FakeChatRemoteDataSource()
+        val repository = ChatRepository(remoteDataSource = fakeDataSource, mediaDataSource = null, cryptoEngine = cryptoEngine)
+        val offlineQueue = OfflineMessageQueue(repository)
+
+        val secretKey = ByteArray(32) { 0x01 }
+        val pendingMsg = PendingMessage(
+            messageId = "msg_offline_1",
+            conversationId = "chat_123",
+            plaintext = "Offline message payload",
+            senderId = "usr_alice",
+            secretKey = secretKey
+        )
+
+        // Enqueue duplicate messages with same messageId
+        offlineQueue.enqueueMessage(pendingMsg)
+        offlineQueue.enqueueMessage(pendingMsg)
+
+        // Idempotent queue size must be 1
+        assertEquals(1, offlineQueue.queueState.value.size)
+
+        // Flush queue
+        val flushedCount = offlineQueue.flushPendingMessages()
+        assertEquals(1, flushedCount)
+        assertEquals(0, offlineQueue.queueState.value.size)
+        assertEquals(1, fakeDataSource.sentMessages.size)
     }
 }
